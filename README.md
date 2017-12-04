@@ -19,6 +19,9 @@ As long as AWS continues to follow the Namespace/Dimension/Metric/Statistic patt
 - Review the spreadsheet
 - Advanced
 	* Review properties/template.properties.  This is an example of collecting stats from multiple Namespace/Dimension/Metric/Statistic combinations
+- NEW: Command-line options
+	* Possible to pass all properties through command-line options instead of the properties file	
+	* e.g. java -jar awscwxls.jar -DstartTime="2017-12-01 00:00:00" -DendTime="2017-12-03 23:59:59" -DperiodMinutes.0=5 -DdimensionValues.0="i-05c44961d20f78ab7" -DxlsPathNamePrefix="/home/jose/cw-metrics" -DmetricStatisticNames.0="CPUUtilization|Average CPUUtilization|Minimum CPUUtilization|Maximum NetworkIn|Sum NetworkOut|Sum" -DcredentialsProfileName=default -DcredentialsRegion=ap-southeast-1
 
  
 ## Java Project Overview

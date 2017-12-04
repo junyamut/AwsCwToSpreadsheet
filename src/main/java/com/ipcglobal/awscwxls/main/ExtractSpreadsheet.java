@@ -11,6 +11,7 @@ import com.ipcglobal.awscwxls.cw.DimensionMetric;
 import com.ipcglobal.awscwxls.cw.ExtractMetrics;
 import com.ipcglobal.awscwxls.util.LogTool;
 import com.ipcglobal.awscwxls.xls.MetricSpreadsheet;
+import xyz.joseyamut.awscwxls.console.ConsoleOptions;
 
 /**
  * ExtractSpreadsheet is the main entry point, it is passed a properties file to determine the execution path.
@@ -28,19 +29,21 @@ public class ExtractSpreadsheet {
 	 * @throws Exception the exception
 	 */
 	public static void main(String[] args) throws Exception {
-		if( args.length == 0 ) throw new Exception("Properties file path/name.ext must be passed");
+		ConsoleOptions consoleOptions = new ConsoleOptions(args);		
+//		System.out.println(consoleOptions.getProperties().toString());
+//		if( args.length == 0 ) throw new Exception("Properties file path/name.ext must be passed");
 		LogTool.initConsole();
-		Properties properties = new Properties( );
-		properties.load( new FileInputStream(args[0]));
-		ExtractMetrics extractMetrics = new ExtractMetrics( properties );
-		MetricSpreadsheet metricSpreadsheet = new MetricSpreadsheet( properties );
+//		Properties properties = new Properties( );
+//		properties.load( new FileInputStream(args[0]));
+		ExtractMetrics extractMetrics = new ExtractMetrics(consoleOptions.getProperties());
+		MetricSpreadsheet metricSpreadsheet = new MetricSpreadsheet(consoleOptions.getProperties());
 		boolean isSpreadsheetCreated = false;
 		
 		for( int offset=0 ; ; offset++ ) {
-			String namespace = properties.getProperty("namespace."+offset);
+			String namespace = consoleOptions.getProperties().getProperty("namespace."+offset);
 			if( namespace == null || "".equals(namespace)) break;
 			
-			ExtractItem extractItem = new ExtractItem( properties, offset );
+			ExtractItem extractItem = new ExtractItem( consoleOptions.getProperties(), offset );
 			List<DimensionMetric> dimensionMetrics = extractMetrics.extractMetricsByDimension(extractItem);
 			metricSpreadsheet.createSheet( dimensionMetrics, extractItem );
 			isSpreadsheetCreated = true;
@@ -48,7 +51,6 @@ public class ExtractSpreadsheet {
 
 		if( isSpreadsheetCreated ) metricSpreadsheet.writeWorkbook( );
 		else log.error("Invalid Properties file - must contain at least one resource, i.e. one EC2 instance, one ELB name, etc.");
-
 	}
 
 }
