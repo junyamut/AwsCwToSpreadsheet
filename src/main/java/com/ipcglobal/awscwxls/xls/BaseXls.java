@@ -3,8 +3,8 @@ package com.ipcglobal.awscwxls.xls;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+//import org.apache.commons.logging.Log;
+//import org.apache.commons.logging.LogFactory;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.Font;
@@ -23,7 +23,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class BaseXls {
 	
 	/** The log. */
-	private static Log log = LogFactory.getLog(BaseXls.class);
+//	private static Log log = LogFactory.getLog(BaseXls.class);
 	
 	/**
 	 * The Enum HdrAlign.

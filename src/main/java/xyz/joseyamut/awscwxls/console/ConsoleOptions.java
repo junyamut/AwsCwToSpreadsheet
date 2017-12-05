@@ -5,8 +5,17 @@ import static java.lang.System.out;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -14,16 +23,23 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import xyz.joseyamut.awscwxls.console.model.ConsoleOptionsPropertiesModel;
 
 public class ConsoleOptions extends ConsoleHelpManual {
+	private static Log log = LogFactory.getLog(ConsoleOptions.class);
+	private Validator validator;
 	private Properties listProperties;
-	private Options options;
+	private Options options;	
 	private Option
 				help,			// Boolean
 				property,		// Requires key=value pair
 				properties,		// Requires name of file
 				version;		// Boolean
-	public ConsoleOptionsPropertiesMapper propertiesMapper;	
+	public ConsoleOptionsPropertiesMapper propertiesMapper;
+	public ConsoleOptionsPropertiesModel propertiesModel;
 	
 	public ConsoleOptions(String[] arguments) {
 		options = defineOptions();
@@ -31,6 +47,8 @@ public class ConsoleOptions extends ConsoleHelpManual {
 			printHelp(options);
 			System.exit(-1);
 		}
+		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+		validator = factory.getValidator();
 		CommandLine commandLine = generateCommandLine(options, arguments);
 		processOptions(commandLine);
 	}
@@ -68,8 +86,8 @@ public class ConsoleOptions extends ConsoleHelpManual {
 		try {
 			commandLine = commanddLineParser.parse(options, arguments);
 		} catch (ParseException exception) {
-			out.println(
-				"ERROR: Unable to parse command-line arguments "
+			log.error(
+				"Unable to parse command-line arguments "
 				+ Arrays.toString(arguments) 
 				+ "with the following exception "
 				+ exception
@@ -85,28 +103,51 @@ public class ConsoleOptions extends ConsoleHelpManual {
 		} else if (commandLine.hasOption(VERSION_OPTION)) {
 			printVersion();
 			System.exit(-1);
-		} else if (commandLine.hasOption(PROPERTIES_OPTION)) {
+		} else if (commandLine.hasOption(PROPERTIES_OPTION)) {			
 			try {
 				loadPropertiesFromFile(commandLine.getOptionValue(PROPERTIES_OPTION));
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
 			} catch (IOException e) {
-				e.printStackTrace();
-			}			
+				log.error(e.getMessage());
+			}
+						
 		} else {
-			if (validateProperties(commandLine)) {
-				propertiesMapper = new ConsoleOptionsPropertiesMapper.ConsoleOptionsPropertiesBuilder()				
+			try {
+				propertiesModel = new ConsoleOptionsPropertiesModel.ConsoleOptionsPropertiesBuilder()
+					.dimensionName(commandLine.getOptionProperties(PROPERTY_OPTION).getProperty(ConsoleOptionsPropertiesMapper.DIMENSION_NAME_KEY))
+					.endTime(
+						new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(commandLine.getOptionProperties(PROPERTY_OPTION).getProperty(ConsoleOptionsPropertiesMapper.END_TIME_KEY))
+					)
+					.instanceId(commandLine.getOptionProperties(PROPERTY_OPTION).getProperty(ConsoleOptionsPropertiesMapper.INSTANCE_ID_KEY))
+					.intervalPeriod(
+						Integer.parseInt(commandLine.getOptionProperties(PROPERTY_OPTION).getProperty(ConsoleOptionsPropertiesMapper.INTERVAL_PERIOD_KEY))
+					)					
+					.metricNames(commandLine.getOptionProperties(PROPERTY_OPTION).getProperty(ConsoleOptionsPropertiesMapper.METRIC_NAMES_KEY))
+					.outputPath(commandLine.getOptionProperties(PROPERTY_OPTION).getProperty(ConsoleOptionsPropertiesMapper.OUTPUT_PATH_KEY))
 					.profileCredential(commandLine.getOptionProperties(PROPERTY_OPTION).getProperty(ConsoleOptionsPropertiesMapper.PROFILE_CREDENTIAL_KEY))
 					.regionName(commandLine.getOptionProperties(PROPERTY_OPTION).getProperty(ConsoleOptionsPropertiesMapper.REGION_NAME_KEY))
-					.startTime(commandLine.getOptionProperties(PROPERTY_OPTION).getProperty(ConsoleOptionsPropertiesMapper.START_TIME_KEY))
-					.endTime(commandLine.getOptionProperties(PROPERTY_OPTION).getProperty(ConsoleOptionsPropertiesMapper.END_TIME_KEY))
-					.outputPath(commandLine.getOptionProperties(PROPERTY_OPTION).getProperty(ConsoleOptionsPropertiesMapper.OUTPUT_PATH_KEY))
-					.intervalPeriod(Integer.parseInt(commandLine.getOptionProperties(PROPERTY_OPTION).getProperty(ConsoleOptionsPropertiesMapper.INTERVAL_PERIOD_KEY)))
-					.instanceId(commandLine.getOptionProperties(PROPERTY_OPTION).getProperty(ConsoleOptionsPropertiesMapper.INSTANCE_ID_KEY))
-					.metricNames(commandLine.getOptionProperties(PROPERTY_OPTION).getProperty(ConsoleOptionsPropertiesMapper.METRIC_NAMES_KEY))
+					.serviceName(commandLine.getOptionProperties(PROPERTY_OPTION).getProperty(ConsoleOptionsPropertiesMapper.SERVICE_NAME_KEY))
+					.startTime(
+						new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").parse(commandLine.getOptionProperties(PROPERTY_OPTION).getProperty(ConsoleOptionsPropertiesMapper.START_TIME_KEY))
+					)
 					.build();
-				this.listProperties = propertiesMapper.getProperties();
+			} catch (NumberFormatException | java.text.ParseException e) {
+				log.error(e.getMessage());
 			}
+			try {
+				validateProperties(propertiesModel);
+				propertiesMapper = new ConsoleOptionsPropertiesMapper(propertiesModel);
+				out.println(propertiesMapper.getProperties().toString());
+				this.listProperties = propertiesMapper.getProperties();
+			} catch(ConstraintViolationException e) {
+				log.error(e.getMessage());
+			}
+		}
+	}
+	
+	private void validateProperties(ConsoleOptionsPropertiesModel model) throws ConstraintViolationException {
+		Set<ConstraintViolation<ConsoleOptionsPropertiesModel>> violations = validator.validate(model);
+		if (!violations.isEmpty()) {
+			throw new ConstraintViolationException(new HashSet<ConstraintViolation<ConsoleOptionsPropertiesModel>>(violations));
 		}
 	}
 	
@@ -117,64 +158,6 @@ public class ConsoleOptions extends ConsoleHelpManual {
 	private void loadPropertiesFromFile(String pathToPropertiesFile) throws FileNotFoundException, IOException {
 		Properties properties = new Properties();
 		properties.load(new FileInputStream(pathToPropertiesFile));
-		propertiesMapper = new ConsoleOptionsPropertiesMapper.ConsoleOptionsPropertiesBuilder()				
-			.profileCredential(properties.getProperty(ConsoleOptionsPropertiesMapper.PROFILE_CREDENTIAL_KEY))
-			.regionName(properties.getProperty(ConsoleOptionsPropertiesMapper.REGION_NAME_KEY))
-			.startTime(properties.getProperty(ConsoleOptionsPropertiesMapper.START_TIME_KEY))
-			.endTime(properties.getProperty(ConsoleOptionsPropertiesMapper.END_TIME_KEY))
-			.outputPath(properties.getProperty(ConsoleOptionsPropertiesMapper.OUTPUT_PATH_KEY))
-			.intervalPeriod(Integer.parseInt(properties.getProperty(ConsoleOptionsPropertiesMapper.INTERVAL_PERIOD_KEY)))
-			.instanceId(properties.getProperty(ConsoleOptionsPropertiesMapper.INSTANCE_ID_KEY))
-			.metricNames(properties.getProperty(ConsoleOptionsPropertiesMapper.METRIC_NAMES_KEY))
-			.build();
-		this.listProperties = propertiesMapper.getProperties();
-	}
-	
-	private boolean validateProperties(CommandLine commandLine) {		
-		try {			
-			if (commandLine.hasOption(PROPERTY_OPTION)) {
-				Properties properties = commandLine.getOptionProperties(PROPERTY_OPTION);
-				if (properties.containsKey(ConsoleOptionsPropertiesMapper.END_TIME_KEY)
-						&& properties.getProperty(ConsoleOptionsPropertiesMapper.END_TIME_KEY).isEmpty()) {
-					throw new IllegalArgumentException(ConsoleOptionsPropertiesMapper.END_TIME_KEY.concat(" is required"));
-				}
-				if (properties.containsKey(ConsoleOptionsPropertiesMapper.INSTANCE_ID_KEY) 
-						&& properties.getProperty(ConsoleOptionsPropertiesMapper.INSTANCE_ID_KEY).isEmpty()) {
-					throw new IllegalArgumentException(ConsoleOptionsPropertiesMapper.INSTANCE_ID_KEY.concat(" should not be empty"));
-				}
-				if (properties.containsKey(ConsoleOptionsPropertiesMapper.INTERVAL_PERIOD_KEY)
-						&& properties.getProperty(ConsoleOptionsPropertiesMapper.INTERVAL_PERIOD_KEY).isEmpty()
-						|| properties.getProperty(ConsoleOptionsPropertiesMapper.INTERVAL_PERIOD_KEY).equals("0")) {
-					throw new IllegalArgumentException(ConsoleOptionsPropertiesMapper.INTERVAL_PERIOD_KEY.concat(" should not be empty or equal to zero"));
-				}
-				if (properties.containsKey(ConsoleOptionsPropertiesMapper.METRIC_NAMES_KEY)
-						&& properties.getProperty(ConsoleOptionsPropertiesMapper.METRIC_NAMES_KEY).isEmpty()) {
-					throw new IllegalArgumentException(ConsoleOptionsPropertiesMapper.METRIC_NAMES_KEY.concat(" must be a valid path"));
-				}
-				if (properties.containsKey(ConsoleOptionsPropertiesMapper.OUTPUT_PATH_KEY)
-						&& properties.getProperty(ConsoleOptionsPropertiesMapper.OUTPUT_PATH_KEY).isEmpty()) {
-					throw new IllegalArgumentException(ConsoleOptionsPropertiesMapper.OUTPUT_PATH_KEY.concat(" must be a valid path"));
-				}
-				if (properties.containsKey(ConsoleOptionsPropertiesMapper.PROFILE_CREDENTIAL_KEY)
-						&& properties.getProperty(ConsoleOptionsPropertiesMapper.PROFILE_CREDENTIAL_KEY).isEmpty()) {
-					throw new IllegalArgumentException(ConsoleOptionsPropertiesMapper.PROFILE_CREDENTIAL_KEY.concat(" should be in the settings.ini of your AWS credentials"));
-				}
-				if (properties.containsKey(ConsoleOptionsPropertiesMapper.REGION_NAME_KEY)
-						&& properties.getProperty(ConsoleOptionsPropertiesMapper.REGION_NAME_KEY).isEmpty()) {
-					throw new IllegalArgumentException(ConsoleOptionsPropertiesMapper.REGION_NAME_KEY.concat(" must be a valid AWS region"));
-				}
-				if (properties.containsKey(ConsoleOptionsPropertiesMapper.START_TIME_KEY)
-						&& properties.getProperty(ConsoleOptionsPropertiesMapper.START_TIME_KEY).isEmpty()) {
-					throw new IllegalArgumentException(ConsoleOptionsPropertiesMapper.START_TIME_KEY.concat(" is required"));
-				}
-			}
-			return true;
-		} catch (Exception exception) {
-			out.println(
-				"ERROR: Trying to get a property(s) of an object with the following exception "
-				+ exception
-			);
-		}
-		return false;		
+		this.listProperties = properties;
 	}
 }

@@ -1,15 +1,13 @@
 package com.ipcglobal.awscwxls.main;
 
-import java.io.FileInputStream;
 import java.util.List;
-import java.util.Properties;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.log4j.PropertyConfigurator;
 
 import com.ipcglobal.awscwxls.cw.DimensionMetric;
 import com.ipcglobal.awscwxls.cw.ExtractMetrics;
-import com.ipcglobal.awscwxls.util.LogTool;
+//import com.ipcglobal.awscwxls.util.LogTool;
 import com.ipcglobal.awscwxls.xls.MetricSpreadsheet;
 import xyz.joseyamut.awscwxls.console.ConsoleOptions;
 
@@ -29,12 +27,10 @@ public class ExtractSpreadsheet {
 	 * @throws Exception the exception
 	 */
 	public static void main(String[] args) throws Exception {
+		PropertyConfigurator.configure("log4j.properties");
 		ConsoleOptions consoleOptions = new ConsoleOptions(args);		
-//		System.out.println(consoleOptions.getProperties().toString());
-//		if( args.length == 0 ) throw new Exception("Properties file path/name.ext must be passed");
-		LogTool.initConsole();
-//		Properties properties = new Properties( );
-//		properties.load( new FileInputStream(args[0]));
+//		LogTool.initConsole();
+//		System.exit(0);
 		ExtractMetrics extractMetrics = new ExtractMetrics(consoleOptions.getProperties());
 		MetricSpreadsheet metricSpreadsheet = new MetricSpreadsheet(consoleOptions.getProperties());
 		boolean isSpreadsheetCreated = false;
@@ -50,7 +46,7 @@ public class ExtractSpreadsheet {
 		}
 
 		if( isSpreadsheetCreated ) metricSpreadsheet.writeWorkbook( );
-		else log.error("Invalid Properties file - must contain at least one resource, i.e. one EC2 instance, one ELB name, etc.");
+		else log.error("Invalid properties - must contain at least one resource, i.e. one EC2 instance, one ELB name, etc.");
 	}
 
 }

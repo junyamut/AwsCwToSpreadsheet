@@ -17,13 +17,13 @@ import org.apache.log4j.RollingFileAppender;
 public class LogTool {
 	
 	/** The Constant PATTERN. */
-	private static final String PATTERN = "%d [%p] [%t] [%c] [%M] [%m]%n";
+	private static final String PATTERN = "%d [%p] [%t] [%c] [%M] [%m]%n";	
 
 	/**
 	 * Inits the console.
 	 */
 	public static void initConsole() {
-		initConsole(Level.INFO);
+		initConsole(Level.DEBUG);
 	}
 
 	/**
