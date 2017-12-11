@@ -16,6 +16,7 @@ public class ConsoleOptionsPropertiesModel implements Serializable {
 	@NotNull (message = "Date format must be in yyyy-MM-dd HH:mm[:ss]")
 	@Past
 	private Date startTime;
+	@NotNull (message = "is required")
 	@Min(5)
 	private int intervalPeriod;
 	/*@NotNull (message = "is required")
