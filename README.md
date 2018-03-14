@@ -38,4 +38,5 @@ As long as AWS continues to follow the Namespace/Dimension/Metric/Statistic patt
  
 *Thanks to Alois Reitbauer, the examples on his [blog](http://apmblog.compuware.com/2010/04/22/week-14-building-your-own-amazon-cloudwatch-monitor-in-5-steps/) accelerated my understanding of the CW API.* 
  
+ *AWS Namespace list can be found [at this page](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html).*
 
