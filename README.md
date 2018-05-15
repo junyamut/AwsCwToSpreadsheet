@@ -1,5 +1,7 @@
 ### Generic AWS CloudWatch to Spreadsheet Exporter
 
+*Based and modified from Pete Zybrick's work @ [https://github.com/petezybrick/awscwxls](https://github.com/petezybrick/awscwxls)
+
 CloudWatch doesn't provide an Export utility - this does.  awscwxls creates spreadsheets based on generic sets of Namespace/Dimension/Metric/Statistic specifications.
 As long as AWS continues to follow the Namespace/Dimension/Metric/Statistic pattern, awscwxls should work for existing and future Namespaces (Services). Each set of specifications is stored in a properties file, so each properties file can be configured for a specific set of AWS Services and resources.  Take a look at run/properties/template.properties for a complete example.
 
@@ -34,9 +36,11 @@ As long as AWS continues to follow the Namespace/Dimension/Metric/Statistic patt
  * Uses Apache POI to create the spreadsheets.  Take a look at BaseXls.java, encapsulates most of the POI complexity, MetricSpreadsheet.java creates the XLS.
  * Entry point: ExtractSpreadsheet.main()
  * ExtractMetrics.java does most of the heavy lifting - connecting to CW and getting the metrics/statistics
+ 
+## Sample properties file in *sample-properties* branch
 
  
 *Thanks to Alois Reitbauer, the examples on his [blog](http://apmblog.compuware.com/2010/04/22/week-14-building-your-own-amazon-cloudwatch-monitor-in-5-steps/) accelerated my understanding of the CW API.* 
  
- *AWS Namespace list can be found [at this page](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html).*
+*AWS Namespace list can be found [at this page](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/viewing_metrics_with_cloudwatch.html).*
 
