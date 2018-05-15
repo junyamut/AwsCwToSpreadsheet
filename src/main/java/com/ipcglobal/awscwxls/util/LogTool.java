@@ -23,7 +23,7 @@ public class LogTool {
 	 * Inits the console.
 	 */
 	public static void initConsole() {
-		initConsole(Level.DEBUG);
+		initConsole(Level.INFO);
 	}
 
 	/**

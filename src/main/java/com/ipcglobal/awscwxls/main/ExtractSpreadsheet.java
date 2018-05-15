@@ -1,13 +1,18 @@
 package com.ipcglobal.awscwxls.main;
 
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.List;
+//import java.util.logging.Level;
+import java.util.Properties;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.log4j.PropertyConfigurator;
 
 import com.ipcglobal.awscwxls.cw.DimensionMetric;
 import com.ipcglobal.awscwxls.cw.ExtractMetrics;
-//import com.ipcglobal.awscwxls.util.LogTool;
+import com.ipcglobal.awscwxls.util.LogTool;
 import com.ipcglobal.awscwxls.xls.MetricSpreadsheet;
 import xyz.joseyamut.awscwxls.console.ConsoleOptions;
 
@@ -27,10 +32,8 @@ public class ExtractSpreadsheet {
 	 * @throws Exception the exception
 	 */
 	public static void main(String[] args) throws Exception {
-		PropertyConfigurator.configure("log4j.properties");
+		customLogPropertiesFile("log4j.properties");
 		ConsoleOptions consoleOptions = new ConsoleOptions(args);		
-//		LogTool.initConsole();
-//		System.exit(0);
 		ExtractMetrics extractMetrics = new ExtractMetrics(consoleOptions.getProperties());
 		MetricSpreadsheet metricSpreadsheet = new MetricSpreadsheet(consoleOptions.getProperties());
 		boolean isSpreadsheetCreated = false;
@@ -39,7 +42,7 @@ public class ExtractSpreadsheet {
 			String namespace = consoleOptions.getProperties().getProperty("namespace."+offset);
 			if( namespace == null || "".equals(namespace)) break;
 			
-			ExtractItem extractItem = new ExtractItem( consoleOptions.getProperties(), offset );
+			ExtractItem extractItem = new ExtractItem(consoleOptions.getProperties(), offset);
 			List<DimensionMetric> dimensionMetrics = extractMetrics.extractMetricsByDimension(extractItem);
 			metricSpreadsheet.createSheet( dimensionMetrics, extractItem );
 			isSpreadsheetCreated = true;
@@ -47,6 +50,20 @@ public class ExtractSpreadsheet {
 
 		if( isSpreadsheetCreated ) metricSpreadsheet.writeWorkbook( );
 		else log.error("Invalid properties - must contain at least one resource, i.e. one EC2 instance, one ELB name, etc.");
+	}
+	
+	private static void customLogPropertiesFile(String propertiesFileName) {
+		Properties properties = new Properties();
+		FileInputStream fileInputStream = null;
+		try {
+			fileInputStream = new FileInputStream(propertiesFileName);
+			properties.load(fileInputStream);
+			fileInputStream.close();
+			PropertyConfigurator.configure(propertiesFileName);
+		} catch (IOException e) {			
+			System.out.println("Cannot find " + propertiesFileName + " file. Using defaults.");
+			LogTool.initConsole();
+		}
 	}
 
 }
